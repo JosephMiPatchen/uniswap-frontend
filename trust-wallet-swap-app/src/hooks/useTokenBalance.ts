@@ -9,6 +9,7 @@ interface TokenBalanceResult {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+  usdValue: string;
 }
 
 /**
@@ -24,6 +25,7 @@ export const useTokenBalance = (
   const { account, provider, isConnected } = useWallet();
   const [balance, setBalance] = useState<string>('0');
   const [formattedBalance, setFormattedBalance] = useState<string>('0');
+  const [usdValue, setUsdValue] = useState<string>('0.00');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,6 +93,17 @@ export const useTokenBalance = (
         : parsedBalance.toFixed(4);
         
       setFormattedBalance(displayBalance);
+      
+      // Calculate USD value (mock values for demo)
+      let tokenPrice = 0;
+      if (tokenAddress === 'ETH' || tokenAddress === TOKENS.ETH.address) {
+        tokenPrice = 3500; // Mock ETH price in USD
+      } else if (tokenAddress === TOKENS.USDC.address) {
+        tokenPrice = 1.0; // USDC is a stablecoin
+      }
+      
+      const calculatedUsdValue = (parsedBalance * tokenPrice).toFixed(2);
+      setUsdValue(calculatedUsdValue);
     } catch (err: any) {
       console.error('Error fetching token balance:', err);
       setError(`Failed to fetch balance: ${err.message || 'Unknown error'}`);
@@ -111,6 +124,7 @@ export const useTokenBalance = (
     formattedBalance,
     loading,
     error,
-    refetch: fetchBalance
+    refetch: fetchBalance,
+    usdValue
   };
 };

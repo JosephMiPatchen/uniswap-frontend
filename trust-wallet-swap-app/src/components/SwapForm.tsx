@@ -27,7 +27,7 @@ const SwapForm: React.FC = () => {
   const [isSwapping, setIsSwapping] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [slippage, setSlippage] = useState<number>(5); // 5% default slippage - increased to avoid errors
+  const [slippage, setSlippage] = useState<number>(0.5); // 0.5% default slippage
 
   // Reset states when tokens change
   useEffect(() => {
@@ -133,7 +133,7 @@ const SwapForm: React.FC = () => {
       );
       
       // Calculate minimum amount out based on slippage
-      const effectiveSlippage = Math.max(slippage, 5); // Use at least 5% slippage
+      const effectiveSlippage = Math.max(slippage, 0.5); // Use at least 0.5% slippage
       console.log(`Using slippage tolerance: ${effectiveSlippage}%`);
       
       const minOutputAmount = calculateMinimumOutputAmount(
@@ -300,177 +300,144 @@ const SwapForm: React.FC = () => {
   }, [amount, fromToken, toToken]);
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      gap: '15px',
-      padding: '10px'
-    }}>
+    <div className="swap-container">
       {/* From Token Section */}
-      <div>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          marginBottom: '5px' 
-        }}>
-          <span>From:</span>
-          <select 
-            value={fromToken} 
-            onChange={(e) => setFromToken(e.target.value as 'ETH' | 'USDC')}
-            disabled={isSwapping}
-            style={{ marginLeft: '10px' }}
-          >
-            <option value="ETH">ETH</option>
-            <option value="USDC">USDC</option>
-          </select>
+      <div className="input-container">
+        <div className="input-header">
+          <span className="input-label">FROM:</span>
+          <div className="token-selector">
+            <select 
+              value={fromToken} 
+              onChange={(e) => setFromToken(e.target.value as 'ETH' | 'USDC')}
+              disabled={isSwapping}
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                color: 'white',
+                fontFamily: "'Share Tech Mono', monospace",
+                outline: 'none'
+              }}
+            >
+              <option value="ETH">ETH</option>
+              <option value="USDC">USDC</option>
+            </select>
+          </div>
         </div>
-        <input
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="0.0"
-          style={{
-            width: '100%',
-            padding: '10px',
-            borderRadius: '5px',
-            border: '1px solid #ccc'
-          }}
-          disabled={!isConnected || isSwapping}
-        />
+        <div className="input-row">
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            onBlur={(e) => estimateSwap(e.target.value)}
+            placeholder="0.0"
+            className="amount-input"
+            disabled={!isConnected || isSwapping}
+          />
+        </div>
       </div>
 
       {/* Swap Direction Button */}
-      <button 
-        onClick={swapTokens} 
-        disabled={isSwapping}
-        style={{ 
-          padding: '8px', 
-          margin: '10px 0', 
-          backgroundColor: '#4CAF50',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: isSwapping ? 'not-allowed' : 'pointer'
-        }}
-      >
-        ↑↓ Swap Direction
-      </button>
+      <div className="swap-arrow-container">
+        <button 
+          onClick={swapTokens} 
+          disabled={isSwapping}
+          className="cyber-button"
+          style={{ width: '100%', padding: '15px 8px', margin: '15px 0', height: '50px' }}
+        >
+          ↑↓ FLIP TOKENS
+        </button>
+      </div>
 
       {/* To Token Section */}
-      <div>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          marginBottom: '5px' 
-        }}>
-          <span>To:</span>
-          <select 
-            value={toToken} 
-            onChange={(e) => setToToken(e.target.value as 'ETH' | 'USDC')}
-            disabled={isSwapping}
-            style={{ marginLeft: '10px' }}
-          >
-            <option value="ETH">ETH</option>
-            <option value="USDC">USDC</option>
-          </select>
+      <div className="input-container">
+        <div className="input-header">
+          <span className="input-label">TO:</span>
+          <div className="token-selector">
+            <select 
+              value={toToken} 
+              onChange={(e) => setToToken(e.target.value as 'ETH' | 'USDC')}
+              disabled={isSwapping}
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                color: 'white',
+                fontFamily: "'Share Tech Mono', monospace",
+                outline: 'none'
+              }}
+            >
+              <option value="ETH">ETH</option>
+              <option value="USDC">USDC</option>
+            </select>
+          </div>
         </div>
-        <input
-          type="text"
-          value={estimatedOutput}
-          readOnly
-          placeholder="0.0"
-          style={{
-            width: '100%',
-            padding: '10px',
-            borderRadius: '5px',
-            border: '1px solid #ccc',
-            backgroundColor: '#f8f9fa'
-          }}
-        />
+        <div className="input-row">
+          <input
+            type="text"
+            value={estimatedOutput}
+            readOnly
+            placeholder="0.0"
+            className="amount-input"
+            style={{ backgroundColor: 'transparent' }}
+          />
+        </div>
       </div>
 
       {/* Slippage Setting */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '10px',
-        marginTop: '5px'
-      }}>
-        <label>Slippage Tolerance:</label>
-        <input
-          type="number"
-          value={slippage}
-          onChange={(e) => setSlippage(parseFloat(e.target.value) || 0.5)}
-          step="0.1"
-          min="0.1"
-          max="5"
-          style={{
-            width: '60px',
-            padding: '5px',
-            borderRadius: '5px',
-            border: '1px solid #ccc'
-          }}
-          disabled={isSwapping}
-        />
-        <span>%</span>
+      <div className="input-container" style={{ marginTop: '10px' }}>
+        <div className="input-header">
+          <span className="input-label">SLIPPAGE TOLERANCE:</span>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <input
+              type="number"
+              value={slippage}
+              onChange={(e) => setSlippage(parseFloat(e.target.value) || 0.5)}
+              step="0.1"
+              min="0.1"
+              max="5"
+              style={{
+                width: '60px',
+                padding: '5px',
+                borderRadius: '4px',
+                border: '1px solid rgba(255, 0, 255, 0.3)',
+                background: 'rgba(10, 17, 40, 0.7)',
+                color: 'white',
+                fontFamily: "'Share Tech Mono', monospace"
+              }}
+              disabled={isSwapping}
+            />
+            <span style={{ marginLeft: '5px', color: 'var(--cyber-text)' }}>%</span>
+          </div>
+        </div>
       </div>
 
       {/* Swap Button */}
       <button
         onClick={executeSwap}
-        style={{
-          padding: '12px',
-          borderRadius: '5px',
-          border: 'none',
-          backgroundColor: isConnected ? '#3b82f6' : '#94a3b8',
-          color: 'white',
-          fontWeight: 'bold',
-          cursor: isConnected ? 'pointer' : 'not-allowed',
-          marginTop: '10px'
-        }}
+        className="cyber-button"
+        style={{ marginTop: '20px' }}
         disabled={!isConnected || !amount || !estimatedOutput || isSwapping}
       >
-        {isSwapping ? 'Swapping...' : 'Swap'}
+        {isSwapping ? 'PROCESSING...' : 'EXECUTE SWAP'}
       </button>
 
       {/* Error Message */}
       {error && (
-        <div style={{ 
-          color: '#ef4444', 
-          marginTop: '10px',
-          padding: '10px',
-          borderRadius: '5px',
-          backgroundColor: '#fee2e2'
-        }}>
+        <div className="error-message">
           {error}
         </div>
       )}
 
       {/* Success Message */}
       {success && (
-        <div style={{ 
-          color: '#10b981', 
-          marginTop: '10px',
-          padding: '10px',
-          borderRadius: '5px',
-          backgroundColor: '#d1fae5'
-        }}>
+        <div className="success-message">
           {success}
         </div>
       )}
 
-      {/* Not Connected Message */}
-      {!isConnected && (
-        <div style={{ 
-          textAlign: 'center', 
-          color: '#6b7280',
-          marginTop: '10px'
-        }}>
-          Connect your wallet to swap tokens
-        </div>
-      )}
+      {/* No need for a "Not Connected" message here as it's already handled in App.tsx */}
     </div>
   );
 };
+
 
 export default SwapForm;
