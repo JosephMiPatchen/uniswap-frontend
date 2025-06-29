@@ -4,6 +4,7 @@ import { WalletProvider } from './contexts/WalletContext';
 import WalletConnect from './components/WalletConnect';
 import TokenBalance from './components/TokenBalance';
 import { useWallet } from './hooks/useWallet';
+import SwapForm from './components/SwapForm';
 
 // Card component for reusability
 const Card: React.FC<{
@@ -52,15 +53,13 @@ const MainContent: React.FC = () => {
       <Card title="Token Balances">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <TokenBalance tokenSymbol="ETH" />
-          <TokenBalance tokenSymbol="USDT" />
+          <TokenBalance tokenSymbol="USDC" />
         </div>
       </Card>
 
       {isConnected ? (
         <Card title="Swap">
-          <p style={{ textAlign: 'center', color: '#6b7280' }}>
-            Swap functionality will be implemented next.
-          </p>
+          <SwapForm />
         </Card>
       ) : (
         <Card>
@@ -108,7 +107,7 @@ function App() {
               Ethereum Swap App
             </h1>
             <p style={{ color: '#6b7280' }}>
-              Connect your wallet and swap USDT for ETH
+              Connect your wallet and swap USDC for ETH
             </p>
           </header>
 

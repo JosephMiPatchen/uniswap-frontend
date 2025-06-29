@@ -4,7 +4,7 @@ import { useWallet } from '../hooks/useWallet';
 import { TOKENS } from '../constants/tokens';
 
 interface TokenBalanceProps {
-  tokenSymbol: 'ETH' | 'USDT';
+  tokenSymbol: 'ETH' | 'USDC';
 }
 
 const TokenBalance: React.FC<TokenBalanceProps> = ({ tokenSymbol }) => {

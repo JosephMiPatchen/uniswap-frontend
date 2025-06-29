@@ -2,6 +2,9 @@
 export const ETHEREUM_MAINNET_CHAIN_ID = 1;
 export const ETHEREUM_GOERLI_CHAIN_ID = 5;
 
+// Using Ethereum mainnet
+export const CURRENT_CHAIN_ID = ETHEREUM_MAINNET_CHAIN_ID;
+
 // Uniswap Router Address (V3)
 export const UNISWAP_ROUTER_ADDRESS = '0xE592427A0AEce92De3Edee1F18E0157C05861564';
 
@@ -10,16 +13,16 @@ export const TOKENS = {
   ETH: {
     name: 'Ethereum',
     symbol: 'ETH',
-    address: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Special address for ETH
+    address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH address for Uniswap V3
     decimals: 18,
     logoURI: 'https://tokens.1inch.io/0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.png'
   },
-  USDT: {
-    name: 'Tether USD',
-    symbol: 'USDT',
-    address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', // Mainnet USDT
+  USDC: {
+    name: 'USD Coin',
+    symbol: 'USDC',
+    address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
     decimals: 6,
-    logoURI: 'https://tokens.1inch.io/0xdac17f958d2ee523a2206206994597c13d831ec7.png'
+    logoURI: 'https://tokens.1inch.io/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.png'
   }
 };
 
@@ -44,5 +47,12 @@ export const ERC20_ABI = [
 
 // Uniswap Router ABI (minimal for swapping)
 export const UNISWAP_ROUTER_ABI = [
-  'function exactInputSingle(tuple(address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96)) external payable returns (uint256 amountOut)'
+  // ExactInputSingle for V3 swaps
+  'function exactInputSingle(tuple(address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96)) external payable returns (uint256 amountOut)',
+  
+  // For unwrapping WETH
+  'function unwrapWETH9(uint256 amountMinimum, address recipient) external payable',
+  
+  // For getting quotes
+  'function quoteExactInputSingle(address tokenIn, address tokenOut, uint24 fee, uint256 amountIn, uint160 sqrtPriceLimitX96) external view returns (uint256 amountOut)'
 ];
