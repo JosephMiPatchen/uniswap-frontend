@@ -1,46 +1,117 @@
-# Getting Started with Create React App
+# Uniswap V3 ETH-USDC Swap Integration
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This application demonstrates a production-ready implementation of Ethereum token swaps between ETH and USDC using the Uniswap V3 protocol. The integration handles all aspects of the swap process including trade creation, price quoting, slippage handling, token approval, and transaction execution.
 
-## Available Scripts
+## Smart Contracts Used
 
-In the project directory, you can run:
+This application interacts with several Ethereum smart contracts on mainnet:
 
-### `npm start`
+### 1. Uniswap V3 SwapRouter (`0xE592427A0AEce92De3Edee1F18E0157C05861564`)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+The primary contract for executing swaps on Uniswap V3. This contract provides the following key functions:
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+- **`exactInputSingle`**: Executes a swap of a specific amount of one token for as much as possible of another token
+  - Parameters include: tokenIn, tokenOut, fee, recipient, deadline, amountIn, amountOutMinimum, sqrtPriceLimitX96
+  - Used for both ETH→USDC and USDC→WETH swaps
 
-### `npm test`
+- **`unwrapWETH9`**: Unwraps WETH to native ETH and sends it to a specified recipient
+  - Used after USDC→WETH swaps to convert the WETH to native ETH
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- **`multicall`**: Allows batching multiple function calls into a single transaction
+  - Used to combine USDC→WETH swap and WETH→ETH unwrapping in one transaction
 
-### `npm run build`
+### 2. WETH (Wrapped Ether) Token Contract (`0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2`)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+The canonical ERC20 wrapped version of ETH on Ethereum mainnet.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 3. USDC Token Contract (`0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+The official USD Coin ERC20 token on Ethereum mainnet.
 
-### `npm run eject`
+### 4. Uniswap V3 Pool Contract
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+The ETH/USDC liquidity pool that facilitates the swap. For the 0.3% fee tier, the pool address is dynamically computed but corresponds to the ETH-USDC pair with the following properties:
+- Fee tier: 0.3% (3000 in Uniswap's fee representation)
+- Token0: WETH
+- Token1: USDC
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## How Swaps Are Executed
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+### ETH to USDC Swap
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+1. **Trade Creation**:
+   - The application first attempts to create a trade using Uniswap V3 SDK by:
+     - Fetching on-chain pool data (slot0, liquidity, fee)
+     - Creating a Pool instance with the fetched data
+     - Constructing a Route with the pool
+     - Creating a Trade object with the route
+   - If this fails, a fallback mechanism uses a direct swap approach
 
-## Learn More
+2. **Transaction Execution**:
+   - The `exactInputSingle` function is called on the SwapRouter contract
+   - Native ETH is sent along with the transaction (using the `value` field)
+   - ETH is automatically wrapped to WETH by the router
+   - The router swaps WETH for USDC
+   - USDC is sent directly to the user's wallet
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### USDC to ETH Swap
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+1. **Token Approval**:
+   - Before swapping, the application checks if the router has sufficient allowance to spend the user's USDC
+   - If not, it calls the `approve` function on the USDC contract to grant permission
+
+2. **Multicall Transaction**:
+   - A multicall transaction is created that combines two operations:
+     - `exactInputSingle`: Swaps USDC for WETH, but sends the WETH to the router itself
+     - `unwrapWETH9`: Unwraps the WETH to native ETH and sends it to the user's wallet
+   - This approach ensures the user receives native ETH instead of WETH
+
+## Implementation Details
+
+### Slippage Protection
+
+The application implements slippage protection by calculating a minimum output amount based on the user's slippage tolerance setting (defaulting to a minimum of 5% for safety). This ensures trades don't execute if market conditions change unfavorably between quote and execution.
+
+### Error Handling
+
+The integration includes robust error handling for common issues:
+
+- **Quoter Contract Failures**: If the Uniswap Quoter contract call fails (common with some RPC providers), the application falls back to calculating quotes using pool price data
+- **STF Errors**: To prevent "SafeTransferFrom" errors, the transaction uses generous gas limits and higher gas prices
+- **Transaction Failures**: Detailed error messages are provided to help diagnose issues
+
+### Gas Optimization
+
+For mainnet transactions, the application:
+- Sets appropriate gas limits (1,000,000 for simple swaps, 1,500,000 for multicalls)
+- Uses a gas price 20% higher than the network average to improve confirmation times
+- Batches operations using multicall to reduce overall transaction costs
+
+## Getting Started
+
+### Installation
+
+```bash
+npm install
+```
+
+### Running the Application
+
+```bash
+npm start
+```
+
+Open [http://localhost:3000](http://localhost:3000) to view the application in your browser.
+
+### Building for Production
+
+```bash
+npm run build
+```
+
+## Dependencies
+
+- **@uniswap/v3-sdk**: Core SDK for interacting with Uniswap V3
+- **@uniswap/sdk-core**: Base primitives and entities for the Uniswap SDK
+- **ethers.js**: Ethereum wallet implementation and utilities
+- **React**: Frontend framework
